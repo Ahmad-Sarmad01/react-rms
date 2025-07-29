@@ -7,6 +7,15 @@ const navItems = [
   { name: "Tasks", path: "/tasks"},
   { name: "Attendance", path: "/attendance"},
   { name: "Achievements", path: "/achievements"},
+  { name: "Team", path: "/team"},
+  { name: "Leave Requests", path: "/leaves"},
+  { name: "Payroll", path: "/payroll"},
+  { name: "Announcements", path: "/announcements"},
+  { name: "My Profile", path: "/profile"},
+  { name: "Calendar", path: "/calendar"},
+  { name: "Reports", path: "/reports"},
+  { name: "Learning", path: "/learning"},
+  { name: "Support", path: "/support" }
 ];
 
 const Sidebar = () => {
@@ -20,7 +29,8 @@ const Sidebar = () => {
 
 
   return (   // Fix Sidebar's components in here
-    <div className="bg-gray-900 text-white w-60 flex flex-col px-4 pt-4 pb-20 fixed justify-between h-screen ">   
+      <div className="bg-gray-900 text-white w-60 flex flex-col px-4 pt-4 pb-20 fixed h-screen">  
+        <div className="overflow-y-auto flex-1 pr-1 sidebar-scroll">
         <nav className="flex flex-col gap-4">
           {navItems.map((item) => (
             <Link
@@ -35,6 +45,7 @@ const Sidebar = () => {
             </Link>
           ))}
         </nav>
+        </div>
         <div className="flex justify-center mt-4">
           <button
             onClick={handleLogout}

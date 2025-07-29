@@ -1,6 +1,7 @@
 import { useState } from "react";
 import LoginPage from "../components/LoginPage";
 import SignupPage from "../components/SignupPage";
+import Footer from "../components/Footer";
 
 const IntroPage = () => {
   const [showLogin, setShowLogin] = useState(false);
@@ -32,9 +33,7 @@ const IntroPage = () => {
         </div>
       </div>
 
-      <footer className="text-center text-sm text-black py-4 z-10">
-        © 2025 InvexTech · All rights reserved
-      </footer>
+      <Footer />
 
     {showLogin && (
     <div className="absolute inset-0 bg-white/10 backdrop-blur-md flex items-center justify-center z-20 animate-slideUp">
