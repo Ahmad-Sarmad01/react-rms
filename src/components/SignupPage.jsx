@@ -13,7 +13,7 @@ const SignupPage = ({ embedMode }) => {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    setError(""); // clear error on typing
+    setError(""); 
   };
 
   const handleSubmit = (e) => {

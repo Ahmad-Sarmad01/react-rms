@@ -8,7 +8,6 @@ const IntroPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col justify-between bg-gradient-to-br from-white via-blue-50 to-blue-100 px-6 relative overflow-hidden">
-      {/* Intro Content */}
       <div className="flex flex-col items-center justify-center flex-grow text-center mt-20 z-10">
         <h1 className="text-4xl sm:text-5xl font-bold text-blue-700 mb-3">
           Invex RMS
@@ -33,7 +32,6 @@ const IntroPage = () => {
         </div>
       </div>
 
-      {/* Footer */}
       <footer className="text-center text-sm text-black py-4 z-10">
         © 2025 InvexTech · All rights reserved
       </footer>
