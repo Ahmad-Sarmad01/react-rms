@@ -88,7 +88,7 @@ const Attendance = () => {
 
   return (
   <div className="min-h-screen p-6 bg-gradient-to-tr from-blue-50 to-white">
-    <h1 className="text-3xl font-bold text-blue-900 mb-6">Attendance Tracker</h1>
+    <h1 className="text-3xl font-bold text-blue-800 mb-6">Attendance Tracker</h1>
 
     <div className="bg-white rounded-xl shadow p-6 mb-6 border">
         <p className="text-lg mb-4 font-medium">Today: {new Date().toDateString()}</p>
