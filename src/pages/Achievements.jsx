@@ -105,7 +105,7 @@ const [width, height] = useWindowSize();
   return (
     <>
       {showConfetti && <Confetti width={width} height={height} />}
-    <div className="min-h-screen p-6 bg-gradient-to-tr from-blue-50 to-white">
+    <div className="min-h-screen p-6 bg-gradient-to-tr from-blue-50 to-white animate-fade-in">
       <h1 className="text-3xl font-bold text-blue-800 mb-6">Your Achievements</h1>
 
       {achievements.length === 0 ? (

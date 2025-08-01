@@ -87,7 +87,7 @@ const Attendance = () => {
   const currentMonth = new Date().toLocaleString("default", { month: "long" });
 
   return (
-  <div className="min-h-screen p-6 bg-gradient-to-tr from-blue-50 to-white">
+  <div className="min-h-screen p-6 bg-gradient-to-tr from-blue-50 to-white animate-fade-in">
     <h1 className="text-3xl font-bold text-blue-800 mb-6">Attendance Tracker</h1>
 
     <div className="bg-white rounded-xl shadow p-6 mb-6 border">

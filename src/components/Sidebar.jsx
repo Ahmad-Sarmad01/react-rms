@@ -8,7 +8,7 @@ const navItems = [
   { name: "Attendance", path: "/attendance"},
   { name: "Achievements", path: "/achievements"},
   { name: "Team", path: "/team"},
-  { name: "Leave Requests", path: "/leaves"},
+  { name: "Leave Request", path: "/leaves"},
   { name: "Payroll", path: "/payroll"},
   { name: "Announcements", path: "/announcements"},
   { name: "My Profile", path: "/profile"},
@@ -28,7 +28,7 @@ const Sidebar = () => {
 };
 
 
-  return (   // Fix Sidebar's components in here
+  return (   
       <div className="bg-gray-900 text-white w-60 flex flex-col px-4 pt-4 pb-20 fixed h-screen">  
         <div className="overflow-y-auto flex-1 pr-1 sidebar-scroll">
         <nav className="flex flex-col gap-4">
