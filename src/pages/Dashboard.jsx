@@ -1,18 +1,21 @@
 import DashboardCard from "../components/DashboardCard";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Loader from "../components/Loader";
 import { FaTasks, FaCalendarCheck, FaAward, FaUserCircle, FaPlaneDeparture, FaMoneyCheckAlt, FaUsers, 
          FaBullhorn, FaCalendarAlt, FaChartLine, FaBookOpen, FaHeadset, FaSignOutAlt } from "react-icons/fa";
 import Footer from "../components/Footer";
 
 const Dashboard = () => {
   const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("currentUser"));
     if (storedUser) {
       setCurrentUser(storedUser);
+      setTimeout(() => setLoading(false), 2500);
     } else {
       navigate("/login"); 
     }
@@ -37,12 +40,15 @@ const Dashboard = () => {
     { icon: <FaBookOpen />, title: "Learning", to: "/learning" },
     { icon: <FaHeadset />, title: "Support", to: "/support" }
   ];
+
+  if (loading) return <Loader />;
+
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-100 to-white">
       <div className="flex-grow p-4">
         <div className="flex justify-between items-center mt-3 mb-12 mx-14">
           <h1 className="text-2xl font-bold">
-            Welcome {currentUser?.name || "to RMS Portal"}
+            Welcome {currentUser?.name}
           </h1>
           <button
             onClick={handleLogout}
@@ -52,12 +58,11 @@ const Dashboard = () => {
             <FaSignOutAlt />
           </button>
         </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-8 mx-20 mt-20 justify-items-center">
-          {options.map((option, index) => (
-            <DashboardCard key={index} {...option} />
-          ))}
-        </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 mx-4 md:mx-16 lg:mx-36 lg:my-24">
+            {options.map((option, index) => (
+              <DashboardCard key={index} {...option} />
+            ))}
+          </div>
       </div>
 
       <Footer />
