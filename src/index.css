@@ -49,7 +49,7 @@
 
 .pulse-neon {
   animation: pulse-neon 0.8s ease-in-out infinite;
-  border: 2px solid #3b82f6; /* blue-500 */
+  border: 2px solid #3b82f6; 
 }
 
 @keyframes fade-in {

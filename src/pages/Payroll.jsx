@@ -96,7 +96,6 @@ const Payroll = () => {
     );
   }
 
-  // Pie Chart Data
   const pieData = {
     labels: ["Basic Salary", "Bonus", "Deductions"],
     datasets: [
@@ -108,7 +107,6 @@ const Payroll = () => {
     ],
   };
 
-  // Line Chart Data (Net Salary Trend)
   const lineData = {
     labels: history.map((h) => h.month).reverse(),
     datasets: [
@@ -128,7 +126,6 @@ const Payroll = () => {
     <div className="min-h-screen p-6 bg-gradient-to-tr from-blue-50 to-white animate-fade-in">
       <h2 className="text-3xl font-bold text-blue-800 mb-6">Payroll</h2>
 
-      {/* Current Month Payroll */}
       <div className="bg-white rounded-xl shadow p-6 mb-6 border">
         <h3 className="text-2xl font-semibold mb-4 text-blue-800">Current Month Payroll</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

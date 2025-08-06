@@ -70,7 +70,6 @@ useEffect(() => {
     new Set([...storedAchievements, ...newAchievements])
   );
 
-  // Check what was newly unlocked
   const newlyUnlocked = newAchievements.filter(
     (ach) => !storedAchievements.includes(ach)
   );

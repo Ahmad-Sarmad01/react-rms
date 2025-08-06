@@ -157,8 +157,6 @@ const Team = () => {
       member.role.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-
-
   return (
     <div className="min-h-screen bg-gradient-to-tr from-blue-50 to-white p-6 animate-fade-in">
         <div className="flex items-center justify-between flex-wrap gap-4 mb-10">

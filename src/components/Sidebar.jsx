@@ -27,7 +27,6 @@ const Sidebar = () => {
     navigate("/");
 };
 
-
   return (   
       <div className="bg-gray-900 text-white w-60 flex flex-col px-4 pt-4 pb-20 fixed h-screen">  
         <div className="overflow-y-auto flex-1 pr-1 sidebar-scroll">
