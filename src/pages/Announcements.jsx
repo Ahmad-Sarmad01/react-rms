@@ -130,7 +130,7 @@ const Announcements = () => {
         });
     });
 
-    setRecentAchievements(combined.slice(0, 7));
+    setRecentAchievements(combined.slice(0, 11));
     }, []);
 
   const upcomingEvents = [

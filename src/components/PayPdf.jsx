@@ -17,8 +17,20 @@ export const generatePaySlipPDF = (employee, payrollData) => {
     doc.text("Email: info@invextech.com", 15, 34);
     doc.text("Phone: +92 44 2713690", 15, 41);
 
-    doc.setFontSize(16);
-    doc.text("PAYSLIP", 105, 50, { align: "center" });
+    const pageWidth = doc.internal.pageSize.width;
+    const stripWidth = 183;
+    const startX = (pageWidth - stripWidth) / 2; 
+
+    doc.setFillColor(41, 128, 185);
+    doc.rect(startX, 47, stripWidth, 8, "F");
+
+
+    doc.setFontSize(13);
+    doc.setFont("helvetica", "bold"); 
+    doc.setTextColor(255, 255, 255);
+    doc.text("PAYSLIP", 105, 53, { align: "center" });
+
+    doc.setTextColor(0, 0, 0);
 
     doc.setFontSize(12);
     doc.text(`Employee Name: ${employee.name}`, 15, 65);
