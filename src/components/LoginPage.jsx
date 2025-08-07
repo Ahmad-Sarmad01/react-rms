@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "../firebase"; 
 
 const LoginPage = ({ embedMode = false }) => {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -11,28 +14,41 @@ const LoginPage = ({ embedMode = false }) => {
     setError("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const storedUsers = JSON.parse(localStorage.getItem("users")) || [];
+    setError("");
 
-    const matchedUser = storedUsers.find(
-      (user) =>
-        user.email === formData.email && user.password === formData.password
-    );
+    try {
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      );
+      const user = userCredential.user;
 
-    if (matchedUser) {
-      localStorage.setItem("currentUser", JSON.stringify(matchedUser));
-      navigate("/dashboard");
-    } else {
-      setError("Invalid email or password");
+      // Get user data from Firestore
+      const docRef = doc(db, "users", user.uid);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const userData = docSnap.data();
+        localStorage.setItem("currentUser", JSON.stringify(userData));
+        navigate("/dashboard");
+      } else {
+        setError("User data not found in Firestore.");
+      }
+    } catch (err) {
+      if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
+        setError("Invalid email or password!");
+      } else {
+        setError("Invalid email or password!");
+        console.error(err);
+      }
     }
   };
 
   const formContent = (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-white p-6 sm:p-8 w-full"
-    >
+    <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 w-full">
       <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
 
       <input
@@ -66,7 +82,9 @@ const LoginPage = ({ embedMode = false }) => {
     </form>
   );
 
-  return embedMode ? formContent : (
+  return embedMode ? (
+    formContent
+  ) : (
     <div className="min-h-screen flex items-center justify-center bg-blue-50">
       <div className="w-full max-w-sm">{formContent}</div>
     </div>

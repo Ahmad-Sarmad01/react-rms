@@ -1,4 +1,15 @@
 import { useState, useEffect } from "react";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  doc,
+  query,
+  where
+} from "firebase/firestore";
+import { db } from "../firebase"; 
 
 const TasksPage = () => {
   const [title, setTitle] = useState("");
@@ -13,33 +24,49 @@ if (!userEmail) {
   return <p className="p-6 text-red-600 font-semibold">User not logged in.</p>;
 }
 
-  const addTask = () => {
+  const addTask = async () => {
     if (!title || !dueDate) return;
     const newTask = {
-      id: Date.now(),
       title,
       dueDate,
       completed: false,
+      email: userEmail,
+      createdAt: Date.now()
     };
-    const updatedTasks = [...tasks, newTask];
-    setTasks(updatedTasks);
-    localStorage.setItem(`tasks_${userEmail}`, JSON.stringify(updatedTasks));
-    setTitle("");
-    setDueDate("");
+
+    try {
+      const docRef = await addDoc(collection(db, "tasks"), newTask);
+      setTasks([...tasks, { id: docRef.id, ...newTask }]);
+      setTitle("");
+      setDueDate("");
+    } catch (error) {
+      console.error("Error adding task: ", error);
+    }
   };
 
-  const deleteTask = (id) => {
-    const updatedTasks = tasks.filter((task) => task.id !== id);
-      setTasks(updatedTasks);
-      localStorage.setItem(`tasks_${userEmail}`, JSON.stringify(updatedTasks));
+  const deleteTask = async (id) => {
+    try {
+      await deleteDoc(doc(db, "tasks", id));
+      setTasks(tasks.filter((task) => task.id !== id));
+    } catch (error) {
+      console.error("Error deleting task: ", error);
+    }
   };
 
-  const toggleTask = (id) => {
+  const toggleTask = async (id) => {
     const updatedTasks = tasks.map((task) =>
       task.id === id ? { ...task, completed: !task.completed } : task
     );
-    setTasks(updatedTasks);
-    localStorage.setItem(`tasks_${userEmail}`, JSON.stringify(updatedTasks));
+    const toggledTask = updatedTasks.find((t) => t.id === id);
+
+    try {
+      await updateDoc(doc(db, "tasks", id), {
+        completed: toggledTask.completed,
+      });
+      setTasks(updatedTasks);
+    } catch (error) {
+      console.error("Error toggling task: ", error);
+    }
   };
 
   const getFilteredTasks = () => {
@@ -50,21 +77,29 @@ if (!userEmail) {
 
   const filteredTasks = getFilteredTasks();
 
-
   useEffect(() => {
-    const stored = localStorage.getItem(`tasks_${userEmail}`);
-    if (stored) {
+    const fetchTasks = async () => {
       try {
-        const parsed = JSON.parse(stored);
-        const valid = parsed.filter(task => task.title && task.dueDate);
-        setTasks(valid);
-      } catch (err) {
-        console.error("Failed to parse tasks", err);
-        setTasks([]);
+        const q = query(collection(db, "tasks"), where("email", "==", userEmail));
+        const querySnapshot = await getDocs(q);
+        const fetchedTasks = [];
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          fetchedTasks.push({
+            id: docSnap.id,
+            ...data
+          });
+        });
+        setTasks(fetchedTasks);
+      } catch (error) {
+        console.error("Error fetching tasks: ", error);
       }
+    };
+
+    if (userEmail) {
+      fetchTasks();
     }
   }, [userEmail]);
-
 
 
   return (

@@ -1,6 +1,8 @@
 import DashboardCard from "../components/DashboardCard";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { auth } from "../firebase";
 import Loader from "../components/Loader";
 import { FaTasks, FaCalendarCheck, FaAward, FaUserCircle, FaPlaneDeparture, FaMoneyCheckAlt, FaUsers, 
          FaBullhorn, FaCalendarAlt, FaChartLine, FaBookOpen, FaHeadset, FaSignOutAlt } from "react-icons/fa";
@@ -12,18 +14,25 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem("currentUser"));
-    if (storedUser) {
-      setCurrentUser(storedUser);
-      setTimeout(() => setLoading(false), 2500);
-    } else {
-      navigate("/login"); 
-    }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setCurrentUser(user);
+        setTimeout(() => setLoading(false), 2500);
+      } else {
+        navigate("/login");
+      }
+    });
+
+    return () => unsubscribe();
   }, [navigate]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("currentUser");
-    navigate("/");
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate("/");
+    } catch (error) {
+      console.error("Logout failed:", error.message);
+    }
   };
 
   const options = [
@@ -48,7 +57,7 @@ const Dashboard = () => {
       <div className="flex-grow p-4">
         <div className="flex justify-between items-center mt-3 mb-12 mx-14">
           <h1 className="text-2xl font-bold">
-            Welcome {currentUser?.name}
+            Welcome {currentUser?.displayName}
           </h1>
           <button
             onClick={handleLogout}

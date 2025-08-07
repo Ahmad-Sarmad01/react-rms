@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
+import { db } from "../firebase"; 
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 
 const Attendance = () => {
 
@@ -10,74 +12,74 @@ const Attendance = () => {
     return <p className="p-6 text-red-600 font-semibold">User not logged in.</p>;
     }
     
-    const localKey = `attendance_${userEmail}`;
-    const checkInKey = `checkInTime_${userEmail}`;
-    const checkedInKey = `isCheckedIn_${userEmail}`;
+    const attendanceDocRef = doc(db, "attendance", userEmail);
 
-    const [isCheckedIn, setIsCheckedIn] = useState(() => {
-    return localStorage.getItem(checkedInKey) === "true";
-    });
-
-    const [checkInTime, setCheckInTime] = useState(() => {
-    const saved = localStorage.getItem(checkInKey);
-    return saved ? new Date(saved) : null;
-    });
-
-    const [attendanceLog, setAttendanceLog] = useState(() => {
-    const saved = localStorage.getItem(localKey);
-    return saved ? JSON.parse(saved) : [];
-    });
+    const [attendanceLog, setAttendanceLog] = useState([]);
+    const [isCheckedIn, setIsCheckedIn] = useState(false);
+    const [checkInTime, setCheckInTime] = useState(null);
 
     useEffect(() => {
-    localStorage.setItem(localKey, JSON.stringify(attendanceLog));
-    }, [attendanceLog]);
+      const fetchData = async () => {
+        const docSnap = await getDoc(attendanceDocRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setAttendanceLog(data.attendanceLog || []);
+          setIsCheckedIn(data.isCheckedIn || false);
+          setCheckInTime(data.checkInTime ? new Date(data.checkInTime) : null);
+        }
+      };
+      fetchData();
+    }, []);
 
-    useEffect(() => {
-    localStorage.setItem(checkedInKey, isCheckedIn);
-    }, [isCheckedIn]);
 
-    useEffect(() => {
-    if (checkInTime) {
-        localStorage.setItem(checkInKey, checkInTime.toISOString());
-    } else {
-        localStorage.removeItem(checkInKey);
-    }
-    }, [checkInTime]);
+    const handleCheckIn = async () => {
+    const now = new Date();
+    const newLog = [
+      ...attendanceLog,
+      { type: "Check In", time: now.toLocaleTimeString(), date: now.toDateString() },
+    ];
+    setCheckInTime(now);
+    setIsCheckedIn(true);
+    setAttendanceLog(newLog);
 
-    const handleCheckIn = () => {
-        const now = new Date();
-        setCheckInTime(now);
-        setAttendanceLog([
-        ...attendanceLog,
-        { type: "Check In", time: now.toLocaleTimeString(), date: now.toDateString() },
-        ]);
-        setIsCheckedIn(true);
+    await setDoc(attendanceDocRef, {
+      attendanceLog: newLog,
+      isCheckedIn: true,
+      checkInTime: now.toISOString(),
+    });
     };
 
-  const handleCheckOut = () => {
-  const now = new Date();
-  let workingHours = 0;
 
-  if (checkInTime) {
-    const diffMs = now - new Date(checkInTime);
-    workingHours = (diffMs / (1000 * 60 * 60)).toFixed(2);
-  }
+    const handleCheckOut = async () => {
+      const now = new Date();
+      let workingHours = 0;
 
-  setAttendanceLog([
-    ...attendanceLog,
-    {
-      type: "Check Out",
-      time: now.toLocaleTimeString(),
-      date: now.toDateString(),
-      workingHours,
-    },
-  ]);
-  setIsCheckedIn(false);
-  setCheckInTime(null);
+      if (checkInTime) {
+        const diffMs = now - new Date(checkInTime);
+        workingHours = (diffMs / (1000 * 60 * 60)).toFixed(2);
+      }
 
-  localStorage.removeItem("checkInTime");
-  localStorage.setItem("isCheckedIn", "false");
-};
+      const newLog = [
+        ...attendanceLog,
+        {
+          type: "Check Out",
+          time: now.toLocaleTimeString(),
+          date: now.toDateString(),
+          workingHours,
+        },
+      ];
+
+      setAttendanceLog(newLog);
+      setCheckInTime(null);
+      setIsCheckedIn(false);
+
+      await updateDoc(attendanceDocRef, {
+        attendanceLog: newLog,
+        isCheckedIn: false,
+        checkInTime: null,
+      });
+    };
+
 
   const totalTodayHours = attendanceLog
     .filter((entry) => entry.date === new Date().toDateString() && entry.workingHours)

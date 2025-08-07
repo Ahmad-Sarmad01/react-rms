@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { auth, db } from "../firebase";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 
 const SignupPage = ({ embedMode }) => {
   const [formData, setFormData] = useState({
@@ -16,24 +19,40 @@ const SignupPage = ({ embedMode }) => {
     setError(""); 
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const storedUsers = JSON.parse(localStorage.getItem("users")) || [];
+    const { name, email, password } = formData;
 
-    const userExists = storedUsers.some((user) => user.email === formData.email);
+    try {
 
-    if (userExists) {
-      setError("User already exists with this email");
-    } else {
-      const updatedUsers = [...storedUsers, formData];
-      localStorage.setItem("users", JSON.stringify(updatedUsers));
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Update user profile with name
+      await updateProfile(user, { displayName: name });
+
+      // Save user data to Firestore
+      await setDoc(doc(db, "users", user.uid), {
+        uid: user.uid,
+        name,
+        email,
+        createdAt: new Date().toISOString(),
+      });
+
       alert("Signup successful!");
 
       if (!embedMode) {
         navigate("/login");
       }
+    } catch (err) {
+      if (err.code === "auth/email-already-in-use") {
+        setError("User already exists with this email");
+      } else {
+        setError(err.message);
+      }
     }
   };
+
 
   const FormContent = (
     <form onSubmit={handleSubmit} className="bg-white p-8 w-full max-w-sm">
