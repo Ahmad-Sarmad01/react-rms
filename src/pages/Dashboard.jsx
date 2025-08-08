@@ -17,7 +17,7 @@ const Dashboard = () => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setCurrentUser(user);
-        setTimeout(() => setLoading(false), 2500);
+        setTimeout(() => setLoading(false), 1200);
       } else {
         navigate("/login");
       }

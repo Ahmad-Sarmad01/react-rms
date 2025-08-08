@@ -10,12 +10,15 @@ import {
   where
 } from "firebase/firestore";
 import { db } from "../firebase"; 
+import Loadertwo from "../components/Loadertwo";
 
 const TasksPage = () => {
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [tasks, setTasks] = useState([]);
   const [filter, setFilter] = useState("All");
+
+const [loading, setLoading] = useState(true);
 
 const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 const userEmail = currentUser?.email;
@@ -93,14 +96,14 @@ if (!userEmail) {
         setTasks(fetchedTasks);
       } catch (error) {
         console.error("Error fetching tasks: ", error);
+      } finally {
+        setLoading(false);
       }
     };
-
     if (userEmail) {
       fetchTasks();
     }
   }, [userEmail]);
-
 
   return (
     <div className="min-h-screen p-6 bg-gradient-to-tr from-blue-50 to-white animate-fade-in">
@@ -146,7 +149,9 @@ if (!userEmail) {
         ))}
       </div>
 
-      {filteredTasks.length === 0 ? (
+      {loading ? (
+        <Loadertwo /> 
+      ) : filteredTasks.length === 0 ? (
         <p className="text-gray-500 text-center">No tasks to show.</p>
       ) : (
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">

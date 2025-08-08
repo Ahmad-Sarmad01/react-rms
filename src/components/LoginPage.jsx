@@ -2,11 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "../firebase"; 
+import { auth, db } from "../firebase";
 
 const LoginPage = ({ embedMode = false }) => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -17,6 +18,7 @@ const LoginPage = ({ embedMode = false }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
       const userCredential = await signInWithEmailAndPassword(
@@ -26,7 +28,6 @@ const LoginPage = ({ embedMode = false }) => {
       );
       const user = userCredential.user;
 
-      // Get user data from Firestore
       const docRef = doc(db, "users", user.uid);
       const docSnap = await getDoc(docRef);
 
@@ -41,9 +42,11 @@ const LoginPage = ({ embedMode = false }) => {
       if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
         setError("Invalid email or password!");
       } else {
-        setError("Invalid email or password!");
+        setError("Something went wrong. Please try again.");
         console.error(err);
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -75,9 +78,17 @@ const LoginPage = ({ embedMode = false }) => {
 
       <button
         type="submit"
-        className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded"
+        className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded flex items-center justify-center"
+        disabled={loading}
       >
-        Login
+        {loading ? (
+          <div className="flex items-center gap-2">
+            <div className="loader w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            Logging in...
+          </div>
+        ) : (
+          "Login"
+        )}
       </button>
     </form>
   );

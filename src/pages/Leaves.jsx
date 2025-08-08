@@ -1,13 +1,26 @@
 import { useEffect, useState } from "react";
+import Loadertwo from "../components/Loadertwo";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { FaPaperPlane, FaTrashAlt } from "react-icons/fa";
+import { db } from "../firebase"; 
+import {
+  collection,
+  addDoc,
+  query,
+  where,
+  getDocs,
+  deleteDoc,
+  doc,
+  onSnapshot,
+} from "firebase/firestore";
 
 const Leaves = () => {
-
   const [showSuccess, setShowSuccess] = useState(false);
-
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  const userEmail = currentUser?.email;
+
+  const [loading, setLoading] = useState(true);
 
   const [requests, setRequests] = useState([]);
   const [leaveType, setLeaveType] = useState("");
@@ -15,7 +28,50 @@ const Leaves = () => {
   const [toDate, setToDate] = useState("");
   const [reason, setReason] = useState("");
 
-  const userEmail = currentUser?.email;
+  useEffect(() => {
+    if (!userEmail) return;
+
+    const q = query(collection(db, "leaveRequests"), where("user", "==", userEmail));
+
+    // Live updates from Firestore
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const userRequests = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setRequests(userRequests);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [userEmail]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const newRequest = {
+      user: userEmail,
+      leaveType,
+      fromDate,
+      toDate,
+      reason,
+      status: "Pending",
+    };
+
+    await addDoc(collection(db, "leaveRequests"), newRequest);
+
+    // Clear form
+    setLeaveType("");
+    setFromDate("");
+    setToDate("");
+    setReason("");
+    setShowSuccess(true);
+    setTimeout(() => setShowSuccess(false), 8000);
+  };
+
+  const handleDelete = async (id) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this request?");
+    if (!confirmDelete) return;
+
+    await deleteDoc(doc(db, "leaveRequests", id));
+  };
 
   if (!userEmail) {
     return (
@@ -25,58 +81,14 @@ const Leaves = () => {
     );
   }
 
-  useEffect(() => {
-    const allRequests = JSON.parse(localStorage.getItem("leaveRequests")) || [];
-    const userRequests = allRequests.filter((req) => req.user === userEmail);
-    setRequests(userRequests);
-  }, [userEmail]);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    const newRequest = {
-      id: Date.now(),
-      user: userEmail,
-      leaveType,
-      fromDate,
-      toDate,
-      reason,
-      status: "Pending",
-    };
-
-    const allRequests = JSON.parse(localStorage.getItem("leaveRequests")) || [];
-    const updatedRequests = [...allRequests, newRequest];
-
-    localStorage.setItem("leaveRequests", JSON.stringify(updatedRequests));
-
-    const userRequests = updatedRequests.filter((req) => req.user === userEmail);
-    setRequests(userRequests);
-
-    setLeaveType("");
-    setFromDate("");
-    setToDate("");
-    setReason("");
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 8000);
-  };
-
-  const handleDelete = (id) => {
-  const confirmDelete = window.confirm("Are you sure you want to delete this request?");
-  if (!confirmDelete) return;
-
-  const allRequests = JSON.parse(localStorage.getItem("leaveRequests")) || [];
-  const updatedRequests = allRequests.filter((req) => req.id !== id);
-
-  localStorage.setItem("leaveRequests", JSON.stringify(updatedRequests));
-
-  const userRequests = updatedRequests.filter((req) => req.user === userEmail);
-  setRequests(userRequests);
-};
-
-
   return (
     <div className="min-h-screen p-6 bg-gradient-to-tr from-blue-50 to-white animate-fade-in">
       <h2 className="text-3xl font-bold text-blue-800 mb-6">Request a Leave</h2>
+      {loading ? (
+          <Loadertwo />
+      ) : (
+        <>
+      {/* Summary Boxes */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-blue-100 p-4 rounded-xl shadow text-center">
           <p className="text-xl font-bold text-blue-800">{requests.length}</p>
@@ -102,6 +114,7 @@ const Leaves = () => {
         </div>
       </div>
 
+      {/* Success message */}
       {showSuccess && (
         <motion.div
           className="mb-4 text-green-800 bg-green-100 border border-green-300 rounded-md px-4 py-3 text-center font-medium"
@@ -113,6 +126,7 @@ const Leaves = () => {
         </motion.div>
       )}
 
+      {/* Request Form */}
       <motion.form
         onSubmit={handleSubmit}
         className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white rounded-xl shadow p-6 mb-10"
@@ -120,7 +134,7 @@ const Leaves = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-          
+        {/* Form Fields */}
         <div>
           <label className="font-medium">Leave Type</label>
           <select
@@ -181,9 +195,10 @@ const Leaves = () => {
         >
           Submit Request
           <FaPaperPlane />
-        </motion.button>         
+        </motion.button>
       </motion.form>
 
+      {/* Leave History */}
       <div className="mt-10 mx-auto">
         <h3 className="text-2xl font-semibold mb-4 text-blue-800">My Leave History</h3>
 
@@ -200,7 +215,6 @@ const Leaves = () => {
                   <th className="p-3 text-left">Reason</th>
                   <th className="p-3 text-left">Status</th>
                   <th className="p-3 text-left">Action</th>
-
                 </tr>
               </thead>
               <tbody>
@@ -212,19 +226,7 @@ const Leaves = () => {
                     transition={{ duration: 0.3 }}
                     className="hover:bg-blue-100"
                   >
-                    <td className="p-3">
-                      <span className="inline-flex items-center gap-1">
-                        {req.leaveType === "Sick"}
-                        {req.leaveType === "Vacation"}
-                        {req.leaveType === "Casual"}
-                        {req.leaveType === "Annual"}
-                        {req.leaveType === "Maternity"}
-                        {req.leaveType === "Paternity"}
-                        {req.leaveType === "Bereavement"}
-                        {req.leaveType === "Unpaid"}
-                        {req.leaveType}
-                      </span>
-                    </td>
+                    <td className="p-3">{req.leaveType}</td>
                     <td className="p-3">{format(new Date(req.fromDate), "PPP")}</td>
                     <td className="p-3">{format(new Date(req.toDate), "PPP")}</td>
                     <td className="p-3">{req.reason}</td>
@@ -242,7 +244,7 @@ const Leaves = () => {
                     <td className="p-3">
                       <motion.button
                         whileHover={{ scale: 1.3 }}
-                        whileTap={{ scale: 0.90 }}
+                        whileTap={{ scale: 0.9 }}
                         onClick={() => handleDelete(req.id)}
                         className="text-red-600 hover:text-red-800 transition"
                         title="Delete"
@@ -257,6 +259,8 @@ const Leaves = () => {
           </div>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 };

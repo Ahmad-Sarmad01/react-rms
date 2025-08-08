@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import Loadertwo from "../components/Loadertwo";
 import {
   FaExclamationCircle,
   FaBell,
@@ -9,8 +10,13 @@ import {
   FaStar,
   FaCalendarAlt,
 } from "react-icons/fa";
+import { db } from "../firebase";
+import { collection, getDocs } from "firebase/firestore";
 
 const Announcements = () => {
+
+  const [loading, setLoading] = useState(true);
+
   const announcements = [
     {
       id: 1,
@@ -109,28 +115,39 @@ const Announcements = () => {
     useEffect(() => {
     setTimeout(() => setVisible(true), 50);
 
-    const allUsers = JSON.parse(localStorage.getItem("users")) || [];
-    let combined = [];
+    const fetchAchievements = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "achievements"));
+        let combined = [];
 
-    allUsers.forEach((user) => {
-        const unlocked = JSON.parse(localStorage.getItem(`achievements_${user.email}`)) || [];
+        querySnapshot.forEach((doc) => {
+          const userData = doc.data();
+          const email = doc.id;
+          const name = userData.name || email.split("@")[0];
+          const unlocked = userData.unlocked || [];
 
-        unlocked.slice().reverse().forEach((achieve) => {
+          unlocked.slice().reverse().forEach((achieve) => {
             const match = achieve.match(/^(.*?)\s*\((.*?)\)$/);
             const title = match?.[1] || achieve;
             const description = match?.[2] || "";
 
             combined.push({
-                name: user.name,
-                title,
-                description,
-                color: "from-green-400 via-green-500 to-green-600",
-                glow: "rgba(34,197,94,0.8)",
+              name,
+              title,
+              description,
+              color: "from-green-400 via-green-500 to-green-600",
+              glow: "rgba(34,197,94,0.8)",
             });
+          });
         });
-    });
 
-    setRecentAchievements(combined.slice(0, 11));
+        setRecentAchievements(combined.slice(0, 11));
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching achievements:", error);
+      }
+    };
+      fetchAchievements();
     }, []);
 
   const upcomingEvents = [
@@ -196,7 +213,10 @@ const Announcements = () => {
   return (
     <div className="min-h-screen p-6 bg-gradient-to-tr from-blue-50 to-white animate-fade-in">
       <h2 className="text-3xl font-bold text-blue-800 mb-6">Announcements</h2>
-
+{loading ? (
+      <Loadertwo />
+    ) : (
+      <>
       <style>
         {`
           @keyframes pulseGlow {
@@ -288,6 +308,8 @@ const Announcements = () => {
           </div>
         ))}
       </div>
+      </>
+    )}
     </div>
   );
 };

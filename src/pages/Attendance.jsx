@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Loadertwo from "../components/Loadertwo";
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import { db } from "../firebase"; 
@@ -12,6 +13,8 @@ const Attendance = () => {
     return <p className="p-6 text-red-600 font-semibold">User not logged in.</p>;
     }
     
+    const [loading, setLoading] = useState(true);
+
     const attendanceDocRef = doc(db, "attendance", userEmail);
 
     const [attendanceLog, setAttendanceLog] = useState([]);
@@ -20,17 +23,22 @@ const Attendance = () => {
 
     useEffect(() => {
       const fetchData = async () => {
-        const docSnap = await getDoc(attendanceDocRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setAttendanceLog(data.attendanceLog || []);
-          setIsCheckedIn(data.isCheckedIn || false);
-          setCheckInTime(data.checkInTime ? new Date(data.checkInTime) : null);
+        try {
+          const docSnap = await getDoc(attendanceDocRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setAttendanceLog(data.attendanceLog || []);
+            setIsCheckedIn(data.isCheckedIn || false);
+            setCheckInTime(data.checkInTime ? new Date(data.checkInTime) : null);
+          }
+        } catch (error) {
+          console.error("Error fetching attendance data:", error);
+        } finally {
+          setLoading(false); 
         }
       };
       fetchData();
     }, []);
-
 
     const handleCheckIn = async () => {
     const now = new Date();
@@ -92,6 +100,10 @@ const Attendance = () => {
   <div className="min-h-screen p-6 bg-gradient-to-tr from-blue-50 to-white animate-fade-in">
     <h1 className="text-3xl font-bold text-blue-800 mb-6">Attendance Tracker</h1>
 
+{loading ? (
+      <Loadertwo />
+    ) : (
+      <>
     <div className="bg-white rounded-xl shadow p-6 mb-6 border">
         <p className="text-lg mb-4 font-medium">Today: {new Date().toDateString()}</p>
 
@@ -200,6 +212,8 @@ const Attendance = () => {
             .toFixed(1)
         } hrs</p>
     </div>
+    </>
+    )}
   </div>
 );
 

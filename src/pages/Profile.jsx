@@ -1,9 +1,14 @@
 import { useState, useEffect } from "react";
 import { FaEdit } from "react-icons/fa";
+import { db } from "../firebase";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import Loadertwo from "../components/Loadertwo";
 
 const Profile = () => {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
   const userEmail = currentUser?.email;
+
+  const [loading, setLoading] = useState(true);
 
   const [profile, setProfile] = useState({
     name: "",
@@ -19,27 +24,43 @@ const Profile = () => {
   const [formData, setFormData] = useState(profile);
   const [previewImage, setPreviewImage] = useState("");
 
-useEffect(() => {
-  if (!userEmail) return;
-  const savedProfile =
-    JSON.parse(localStorage.getItem(`profile_${userEmail}`)) || {
-      name: currentUser?.name || "",
-      email: userEmail,
-      phone: "",
-      role: "",
-      bio: "",
-      skills: [],
-      profilePic: "",
+  useEffect(() => {
+    if (!userEmail) return;
+
+    const fetchProfile = async () => {
+      try {
+        const docRef = doc(db, "profiles", userEmail);
+        const docSnap = await getDoc(docRef);
+
+        const defaultProfile = {
+          name: currentUser?.name || "",
+          email: userEmail,
+          phone: "",
+          role: "",
+          bio: "",
+          skills: [],
+          profilePic: "",
+        };
+
+        const savedProfile = docSnap.exists() ? docSnap.data() : defaultProfile;
+
+        setProfile(savedProfile);
+        setFormData({
+          ...savedProfile,
+          skills: Array.isArray(savedProfile.skills)
+            ? savedProfile.skills.join(", ")
+            : savedProfile.skills || "",
+        });
+        setPreviewImage(savedProfile.profilePic);
+      } catch (error) {
+        console.error("Error loading profile:", error);
+      } finally {
+        setLoading(false); 
+      }
     };
-  setProfile(savedProfile);
-  setFormData({
-    ...savedProfile,
-    skills: Array.isArray(savedProfile.skills)
-      ? savedProfile.skills.join(", ")
-      : savedProfile.skills || ""
-  });
-  setPreviewImage(savedProfile.profilePic);
-}, [userEmail]);
+
+    fetchProfile();
+  }, [userEmail]);
 
 
   const handleImageUpload = (e) => {
@@ -53,17 +74,22 @@ useEffect(() => {
     reader.readAsDataURL(file);
   };
 
-const handleSave = () => {
-  const updatedProfile = {
-    ...formData,
-    skills: typeof formData.skills === "string"
-      ? formData.skills.split(",").map((s) => s.trim()).filter((s) => s)
-      : formData.skills
+  const handleSave = async () => {
+    const updatedProfile = {
+      ...formData,
+      skills: typeof formData.skills === "string"
+        ? formData.skills.split(",").map((s) => s.trim()).filter((s) => s)
+        : formData.skills
+    };
+
+    try {
+      await setDoc(doc(db, "profiles", userEmail), updatedProfile);
+      setProfile(updatedProfile);
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Error saving profile:", error);
+    }
   };
-  setProfile(updatedProfile);
-  localStorage.setItem(`profile_${userEmail}`, JSON.stringify(updatedProfile));
-  setIsModalOpen(false);
-};
 
 
   if (!userEmail) {
@@ -75,7 +101,10 @@ const handleSave = () => {
   return (
     <div className=" p-6 bg-gradient-to-tr from-blue-50 to-white animate-fade-in">
       <h1 className="text-3xl font-bold text-blue-800 mb-6">My Profile</h1>
-
+    {loading ? (
+            <Loadertwo />
+        ) : (
+          <>
       <style>
         {`
           @keyframes pulseGlow {
@@ -239,6 +268,8 @@ const handleSave = () => {
             </div>
         </div>
       )}
+      </>
+        )}
     </div>
   );
 };
