@@ -1,14 +1,25 @@
 import { useState, useEffect } from "react";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import Loadertwo from "../components/Loadertwo";
 import CalendarModal from "../components/CalendarModal";
+import {
+  collection,
+  getDocs,
+  addDoc,
+  deleteDoc,
+  doc
+} from "firebase/firestore";
+import { db } from "../firebase";
 
-const formatDateKey = (y, m, d) => {
-  return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-};
+const formatDateKey = (y, m, d) =>
+  `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 
 const Calendar = () => {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  const userEmail = currentUser?.email;
+  const userEmailRaw = currentUser?.email;
+  const userEmail = userEmailRaw?.toLowerCase();
+
+  const [loading, setLoading] = useState(true);
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
@@ -21,22 +32,70 @@ const Calendar = () => {
   useEffect(() => {
     if (!userEmail) return;
 
-    setTasks(JSON.parse(localStorage.getItem(`tasks_${userEmail}`)) || []);
+    const fetchAll = async () => {
+      try {
+        setLoading(true);
 
-    const allLeaves = JSON.parse(localStorage.getItem("leaveRequests")) || [];
-    setLeaves(allLeaves.filter((l) => l.user === userEmail));
+        const tasksSnap = await getDocs(collection(db, "tasks"));
+        const allTasks = tasksSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        setTasks(allTasks.filter((t) => (t.email || "").toLowerCase() === userEmail));
 
-    setPersonalEvents(JSON.parse(localStorage.getItem(`calendarEvents_${userEmail}`)) || []);
+        const leavesSnap = await getDocs(collection(db, "leaveRequests"));
+        const allLeaves = leavesSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        setLeaves(allLeaves.filter((l) => (l.user || "").toLowerCase() === userEmail));
 
-    const ann = (JSON.parse(localStorage.getItem("announcements")) || []).map(a => {
-      if (!a.dateKey && a.date) {
-        const dateObj = new Date(a.date);
-        return { ...a, dateKey: formatDateKey(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()) };
-      }
-      return a;
-    });
-    setAnnouncements(ann);
+        const eventsSnap = await getDocs(collection(db, "calendarEvents"));
+        const allEvents = eventsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        setPersonalEvents(allEvents.filter((e) => (e.email || "").toLowerCase() === userEmail));
+
+        const annSnap = await getDocs(collection(db, "announcements"));
+        const annData = annSnap.docs.map((d) => ({ id: d.id, ...d.data() })).map((a) => {
+          if (!a.dateKey && a.date) {
+            const dateObj = new Date(a.date);
+            return {
+              ...a,
+              dateKey: formatDateKey(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()),
+            };
+          }
+          return a;
+        });
+        setAnnouncements(annData);
+        } catch (err) {
+          console.error("Error fetching calendar data:", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+    fetchAll();
   }, [userEmail]);
+
+  const updatePersonalEvents = async (updated) => {
+    setPersonalEvents(updated);
+
+    try {
+      const prev = personalEvents || [];
+      const toAdd = updated.filter((e) => !e.id);
+      for (const e of toAdd) {
+        await addDoc(collection(db, "calendarEvents"), {
+          email: userEmail,
+          date: e.date,
+          title: e.title || "",
+        });
+      }
+
+      const removed = prev.filter((p) => p.id && !updated.some((u) => u.id === p.id));
+      for (const r of removed) {
+        await deleteDoc(doc(db, "calendarEvents", r.id));
+      }
+
+      const eventsSnap = await getDocs(collection(db, "calendarEvents"));
+      const allEvents = eventsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      setPersonalEvents(allEvents.filter((e) => (e.email || "").toLowerCase() === userEmail));
+    } catch (err) {
+      console.error("Error syncing personal events with Firestore:", err);
+    }
+  };
 
   const daysInMonth = (month, year) => new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = (month, year) => new Date(year, month, 1).getDay();
@@ -71,11 +130,6 @@ const Calendar = () => {
     });
   };
 
-  const updatePersonalEvents = (updated) => {
-    setPersonalEvents(updated);
-    localStorage.setItem(`calendarEvents_${userEmail}`, JSON.stringify(updated));
-  };
-
   if (!userEmail) {
     return <p className="p-6 text-red-600 font-semibold">User not logged in.</p>;
   }
@@ -83,7 +137,10 @@ const Calendar = () => {
   return (
     <div className="min-h-screen p-6 bg-gradient-to-tr from-blue-50 to-white">
       <h1 className="text-3xl font-bold text-blue-800 mb-12">Calendar</h1>
-
+{loading ? (
+      <Loadertwo />
+    ) : (
+      <>
       <div className="flex justify-between items-center mb-4">
         <button onClick={prevMonth} className="text-blue-600 hover:text-blue-800">
           <FaChevronLeft size={20} />
@@ -105,17 +162,13 @@ const Calendar = () => {
             : ""
         }`}
       >
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-          <div key={day} className="text-center font-semibold text-gray-600">
-            {day}
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+          <div key={d} className="text-center font-semibold text-gray-600">
+            {d}
           </div>
         ))}
 
-        {Array(startDay)
-          .fill(null)
-          .map((_, i) => (
-            <div key={`empty-${i}`} />
-          ))}
+        {Array(startDay).fill(null).map((_, i) => <div key={`empty-${i}`} />)}
 
         {Array.from({ length: days }, (_, i) => {
           const day = i + 1;
@@ -154,6 +207,8 @@ const Calendar = () => {
           updateEvents={updatePersonalEvents}
           closeModal={() => setSelectedDate(null)}
         />
+      )}
+      </>
       )}
     </div>
   );

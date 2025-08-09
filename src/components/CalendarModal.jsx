@@ -11,7 +11,6 @@ const CalendarModal = ({
   closeModal,
 }) => {
   const [newEvent, setNewEvent] = useState("");
-
   const dateKey = dateInfo.key;
 
   const dayTasks = tasks.filter((t) => t.dueDate === dateKey);
@@ -21,20 +20,25 @@ const CalendarModal = ({
 
   const addEvent = () => {
     if (!newEvent.trim()) return;
-    const updated = [...events, { date: dateKey, title: newEvent.trim() }];
-    updateEvents(updated);
+    // create event object (no id) — parent will persist and refetch
+    const newE = { date: dateKey, title: newEvent.trim() };
+    updateEvents([...events, newE]); // parent will add to Firestore
     setNewEvent("");
   };
 
-  const deleteEvent = (index) => {
-    const updated = events.filter((e, i) => !(e.date === dateKey && i === index));
+  const deleteEvent = (eventObj) => {
+    // filter out the specific event object:
+    // if it has an id, filter by id; otherwise match by date + title (safe fallback)
+    const updated = events.filter((e) => {
+      if (eventObj.id) return e.id !== eventObj.id;
+      return !(e.date === eventObj.date && e.title === eventObj.title);
+    });
     updateEvents(updated);
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
       <div className="bg-white w-full max-w-md rounded-lg shadow-lg p-6 animate-[slideUp_0.3s_ease-out] overflow-y-auto max-h-[90vh]">
-        
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-bold text-gray-800">
             {dateInfo.date}{" "}
@@ -53,7 +57,7 @@ const CalendarModal = ({
             </h3>
             <ul className="list-disc list-inside text-sm text-gray-700">
               {dayAnnouncements.map((a, idx) => (
-                <li key={idx}>{a.title}</li>
+                <li key={idx}>{a.title || a.text}</li>
               ))}
             </ul>
           </div>
@@ -88,10 +92,10 @@ const CalendarModal = ({
           {dayEvents.length > 0 ? (
             <ul className="list-disc list-inside text-sm text-gray-700">
               {dayEvents.map((e, idx) => (
-                <li key={idx} className="flex justify-between items-center">
-                  {e.title}
+                <li key={e.id || `${dateKey}-${idx}`} className="flex justify-between items-center">
+                  <span>{e.title}</span>
                   <button
-                    onClick={() => deleteEvent(idx)}
+                    onClick={() => deleteEvent(e)}
                     className="text-red-500 hover:text-red-700"
                   >
                     <FaTrash size={14} />

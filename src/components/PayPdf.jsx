@@ -33,6 +33,7 @@ export const generatePaySlipPDF = (employee, payrollData) => {
     doc.setTextColor(0, 0, 0);
 
     doc.setFontSize(12);
+    doc.setFont("Sans-Serif");
     doc.text(`Employee Name: ${employee.name}`, 15, 65);
     doc.text(`Email: ${employee.email}`, 15, 72);
     doc.text(`Pay Month: ${payrollData.month}`, 15, 79);

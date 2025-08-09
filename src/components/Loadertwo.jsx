@@ -29,7 +29,7 @@ const Loadertwo = () => {
           border: inherit;
           border-radius: 50%;
           border-color: #619dff transparent;
-          animation: spin 300s linear infinite;
+          animation: spin 3000s linear infinite;
         }
         @keyframes spin {
           100% { transform: rotate(1turn); }

@@ -1,5 +1,21 @@
 import { useState, useEffect } from "react";
 import { FaTrash, FaUpload, FaFileAlt } from "react-icons/fa";
+import { db, storage } from "../firebase"; // adjust path if needed
+import {
+  collection,
+  addDoc,
+  query,
+  where,
+  getDocs,
+  deleteDoc,
+  doc
+} from "firebase/firestore";
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject
+} from "firebase/storage";
 
 const Reports = () => {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
@@ -13,49 +29,69 @@ const Reports = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [reportToDelete, setReportToDelete] = useState(null);
 
-  // Load reports for this user
+  // Load reports from Firestore
   useEffect(() => {
-    if (userEmail) {
-      const savedReports =
-        JSON.parse(localStorage.getItem(`reports_${userEmail}`)) || [];
-      setReports(savedReports);
-    }
+    const fetchReports = async () => {
+      if (!userEmail) return;
+      const q = query(collection(db, "reports"), where("email", "==", userEmail));
+      const snapshot = await getDocs(q);
+      const reportList = snapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        ...docSnap.data()
+      }));
+      setReports(reportList);
+    };
+    fetchReports();
   }, [userEmail]);
 
   const handleFileChange = (e) => {
     setFiles(Array.from(e.target.files));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!taskName.trim() || !description.trim()) {
       alert("Please fill in all required fields.");
       return;
     }
 
-    const newReport = {
-      id: Date.now(),
-      category,
-      taskName,
-      description,
-      files: files.map((file) => ({
-        name: file.name,
-        type: file.type,
-        url: URL.createObjectURL(file),
-      })),
-      date: new Date().toLocaleDateString(),
-    };
+    try {
+      // 1. Upload files to Firebase Storage
+      const uploadedFiles = [];
+      for (let file of files) {
+        const fileRef = ref(storage, `reports/${userEmail}/${Date.now()}_${file.name}`);
+        await uploadBytes(fileRef, file);
+        const downloadURL = await getDownloadURL(fileRef);
+        uploadedFiles.push({
+          name: file.name,
+          type: file.type,
+          url: downloadURL,
+          storagePath: fileRef.fullPath
+        });
+      }
 
-    const updatedReports = [newReport, ...reports];
-    setReports(updatedReports);
-    localStorage.setItem(`reports_${userEmail}`, JSON.stringify(updatedReports));
+      // 2. Save report in Firestore
+      const newReport = {
+        email: userEmail,
+        category,
+        taskName,
+        description,
+        files: uploadedFiles,
+        date: new Date().toLocaleDateString()
+      };
 
-    // Reset form
-    setCategory("Daily");
-    setTaskName("");
-    setDescription("");
-    setFiles([]);
+      const docRef = await addDoc(collection(db, "reports"), newReport);
+      setReports(prev => [{ id: docRef.id, ...newReport }, ...prev]);
+
+      // Reset form
+      setCategory("Daily");
+      setTaskName("");
+      setDescription("");
+      setFiles([]);
+    } catch (err) {
+      console.error("Error submitting report:", err);
+      alert("Failed to submit report.");
+    }
   };
 
   const confirmDelete = (reportId) => {
@@ -63,10 +99,25 @@ const Reports = () => {
     setShowDeleteModal(true);
   };
 
-  const handleDelete = () => {
-    const updatedReports = reports.filter((r) => r.id !== reportToDelete);
-    setReports(updatedReports);
-    localStorage.setItem(`reports_${userEmail}`, JSON.stringify(updatedReports));
+  const handleDelete = async () => {
+    try {
+      const report = reports.find(r => r.id === reportToDelete);
+      if (report) {
+        // Delete files from Storage
+        for (let file of report.files) {
+          if (file.storagePath) {
+            const fileRef = ref(storage, file.storagePath);
+            await deleteObject(fileRef).catch(() => {});
+          }
+        }
+        // Delete doc from Firestore
+        await deleteDoc(doc(db, "reports", reportToDelete));
+        setReports(prev => prev.filter(r => r.id !== reportToDelete));
+      }
+    } catch (err) {
+      console.error("Error deleting report:", err);
+      alert("Failed to delete report.");
+    }
     setShowDeleteModal(false);
     setReportToDelete(null);
   };
