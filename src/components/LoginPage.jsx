@@ -21,6 +21,7 @@ const LoginPage = ({ embedMode = false }) => {
     setLoading(true);
 
     try {
+      // sign in
       const userCredential = await signInWithEmailAndPassword(
         auth,
         formData.email,
@@ -28,6 +29,15 @@ const LoginPage = ({ embedMode = false }) => {
       );
       const user = userCredential.user;
 
+      // Force refresh token to ensure Firestore Listen uses fresh token
+      try {
+        await user.getIdToken(true);
+        console.log('ID token refreshed');
+      } catch (tokenErr) {
+        console.warn('Token refresh failed (continuing):', tokenErr);
+      }
+
+      // now fetch user document from Firestore
       const docRef = doc(db, "users", user.uid);
       const docSnap = await getDoc(docRef);
 
@@ -39,16 +49,21 @@ const LoginPage = ({ embedMode = false }) => {
         setError("User data not found in Firestore.");
       }
     } catch (err) {
+      console.error('Login error full object:', err);
+      console.error('Login error code:', err?.code);
+      console.error('Login error message:', err?.message);
       if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password") {
         setError("Invalid email or password!");
+      } else if (err.code && err.code.includes('permission')) {
+        setError("Permission denied by Firestore rules.");
       } else {
         setError("Something went wrong. Please try again.");
-        console.error(err);
       }
     } finally {
       setLoading(false);
     }
   };
+
 
   const formContent = (
     <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 w-full">

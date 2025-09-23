@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
+import { serverTimestamp } from "firebase/firestore";
 
 const SignupPage = ({ embedMode }) => {
   const [formData, setFormData] = useState({
@@ -36,7 +37,7 @@ const SignupPage = ({ embedMode }) => {
         uid: user.uid,
         name,
         email,
-        createdAt: new Date().toISOString(),
+        createdAt: serverTimestamp(),
       });
 
       alert("Signup successful!");

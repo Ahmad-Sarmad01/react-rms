@@ -11,7 +11,7 @@ const IntroPage = () => {
     <div className="min-h-screen flex flex-col justify-between bg-gradient-to-br from-white via-blue-50 to-blue-100 px-6 relative overflow-hidden">
       <div className="flex flex-col items-center justify-center flex-grow text-center mt-20 z-10">
         <h1 className="text-4xl sm:text-5xl font-bold text-blue-700 mb-3">
-          Invex RMS
+          Employee MS
         </h1>
         <p className="text-gray-600 text-lg sm:text-xl mb-6 max-w-md">
           Simplifying Resource Management for Smart Teams
