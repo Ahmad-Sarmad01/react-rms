@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { db } from "../firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { generatePaySlipPDF } from "../components/PayPDF";
+import { generatePaySlipPDF } from "../components/PayPdf";
 import { Pie, Line } from "react-chartjs-2";
 import Loadertwo from "../components/Loadertwo"; // Make sure this is imported
 import {
@@ -22,12 +22,22 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   PointElement,
-  LineElement
+  LineElement,
 );
 
 const monthNames = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 const Payroll = () => {
@@ -49,7 +59,7 @@ const Payroll = () => {
       bonus,
       deductions,
       netSalary,
-      status: "Paid"
+      status: "Paid",
     };
   };
 
@@ -148,10 +158,18 @@ const Payroll = () => {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <p><strong>Month:</strong> {payrollData.month}</p>
-                <p><strong>Basic Salary:</strong> PKR {payrollData.basicSalary}</p>
-                <p><strong>Bonus:</strong> PKR {payrollData.bonus}</p>
-                <p><strong>Deductions:</strong> PKR {payrollData.deductions}</p>
+                <p>
+                  <strong>Month:</strong> {payrollData.month}
+                </p>
+                <p>
+                  <strong>Basic Salary:</strong> PKR {payrollData.basicSalary}
+                </p>
+                <p>
+                  <strong>Bonus:</strong> PKR {payrollData.bonus}
+                </p>
+                <p>
+                  <strong>Deductions:</strong> PKR {payrollData.deductions}
+                </p>
               </div>
               <div
                 className="flex flex-col items-center justify-center bg-blue-100 rounded-lg p-4
@@ -171,7 +189,7 @@ const Payroll = () => {
                   onClick={() =>
                     generatePaySlipPDF(
                       { name: currentUser.name, email: currentUser.email },
-                      payrollData
+                      payrollData,
                     )
                   }
                   className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-md 
@@ -186,17 +204,25 @@ const Payroll = () => {
 
           {/* Charts */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-            <div className="bg-white rounded-xl shadow p-6 border hover:shadow-lg transition duration-300 
-                          animate-fade-in-scale flex justify-center">
+            <div
+              className="bg-white rounded-xl shadow p-6 border hover:shadow-lg transition duration-300 
+                          animate-fade-in-scale flex justify-center"
+            >
               <div className="w-full max-w-[350px]">
-                <h4 className="text-lg font-semibold text-gray-800 mb-4">Salary Structure</h4>
+                <h4 className="text-lg font-semibold text-gray-800 mb-4">
+                  Salary Structure
+                </h4>
                 <Pie data={pieData} />
               </div>
             </div>
-            <div className="bg-white rounded-xl shadow p-6 border hover:shadow-lg transition duration-300 
-                          animate-fade-in-scale delay-200 flex justify-center">
+            <div
+              className="bg-white rounded-xl shadow p-6 border hover:shadow-lg transition duration-300 
+                          animate-fade-in-scale delay-200 flex justify-center"
+            >
               <div className="w-full max-w-[700px]">
-                <h4 className="text-lg font-semibold text-gray-800 mb-4">Salary Trend (Last 6 Months)</h4>
+                <h4 className="text-lg font-semibold text-gray-800 mb-4">
+                  Salary Trend (Last 6 Months)
+                </h4>
                 <Line data={lineData} />
               </div>
             </div>
@@ -204,7 +230,9 @@ const Payroll = () => {
 
           {/* History Table */}
           <div>
-            <h3 className="text-2xl font-semibold mb-4 text-blue-800">Payroll History</h3>
+            <h3 className="text-2xl font-semibold mb-4 text-blue-800">
+              Payroll History
+            </h3>
             <table className="w-full border border-gray-200 rounded-lg overflow-hidden">
               <thead className="bg-blue-600 text-white">
                 <tr>
@@ -227,13 +255,18 @@ const Payroll = () => {
                     <td className="py-2 px-4 text-green-700 font-semibold">
                       PKR {record.netSalary}
                     </td>
-                    <td className="py-2 px-4 text-green-600 font-bold">{record.status}</td>
+                    <td className="py-2 px-4 text-green-600 font-bold">
+                      {record.status}
+                    </td>
                     <td className="py-2 px-4">
                       <button
                         onClick={() =>
                           generatePaySlipPDF(
-                            { name: currentUser.name, email: currentUser.email },
-                            record
+                            {
+                              name: currentUser.name,
+                              email: currentUser.email,
+                            },
+                            record,
                           )
                         }
                         className="bg-blue-500 text-white px-3 py-1 rounded text-sm transition duration-300 transform hover:scale-105 hover:bg-blue-700 hover:shadow-[0_0_15px_rgba(59,130,246,0.8)]"
